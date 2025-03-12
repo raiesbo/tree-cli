@@ -12,13 +12,18 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, level: u8) !void {
 
     var it = dir.iterate();
 
-    while (try it.next()) |entry| {
+    var currEntry: ?std.fs.Dir.Entry = try it.next();
+    var nextEntry: ?std.fs.Dir.Entry = try it.next();
+
+    while (currEntry) |entry| {
         var indentBuffer: [128]u8 = undefined;
         const indentLen = @min(indentBuffer.len, level * 4);
         @memset(indentBuffer[0..indentLen], ' ');
-        try stdout.print("{s}├── {s}\n", .{ indentBuffer[0..indentLen], entry.name });
-        // TODO:
-        // try stdout.print("{s}└── {s}\n", .{ indentBuffer[0..indentLen], entry.name });
+        if (nextEntry != null) {
+            try stdout.print("{s}├── {s}\n", .{ indentBuffer[0..indentLen], entry.name });
+        } else {
+            try stdout.print("{s}└── {s}\n", .{ indentBuffer[0..indentLen], entry.name });
+        }
 
         if (entry.kind == .directory and entry.name[0] != 46) {
             var pathBuffer: [50]u8 = undefined;
@@ -26,5 +31,8 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, level: u8) !void {
             const subDir = try std.fs.cwd().openDir(fullPath, .{ .iterate = true });
             try walkDir(subDir, fullPath, level + 1);
         }
+
+        currEntry = nextEntry;
+        nextEntry = try it.next();
     }
 }
