@@ -10,11 +10,11 @@ pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
     try stdout.print("·\n", .{});
 
-    try walkDir(dir, ".", 0, &numDirs, &numFiles);
+    try walkDir(dir, ".", &numDirs, &numFiles, "");
     try stdout.print("\nDirectories: {} Files: {}\n", .{ numDirs, numFiles });
 }
 
-pub fn walkDir(dir: std.fs.Dir, path: []const u8, level: u8, numDirs: *i32, numFiles: *i32) !void {
+pub fn walkDir(dir: std.fs.Dir, path: []const u8, numDirs: *i32, numFiles: *i32, prefix: []const u8) !void {
     const stdout = std.io.getStdOut().writer();
 
     var it = dir.iterate();
@@ -23,23 +23,28 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, level: u8, numDirs: *i32, numF
     var nextEntry = try it.next();
 
     while (currEntry) |entry| {
-        var indentBuffer: [128]u8 = undefined;
-        const indentLen = @min(indentBuffer.len, level * 4);
-        @memset(indentBuffer[0..indentLen], ' ');
         if (nextEntry != null) {
-            try stdout.print("{s}├── {s}\n", .{ indentBuffer[0..indentLen], entry.name });
+            try stdout.print("{s}├── {s}\n", .{ prefix, entry.name });
         } else {
-            try stdout.print("{s}└── {s}\n", .{ indentBuffer[0..indentLen], entry.name });
+            try stdout.print("{s}└── {s}\n", .{ prefix, entry.name });
         }
 
         if (entry.kind == .directory) {
             numDirs.* += 1;
 
+            var prefixBuffer: [50]u8 = undefined;
+            var newPrefix: []u8 = undefined;
+            if (nextEntry != null) {
+                newPrefix = try std.fmt.bufPrint(&prefixBuffer, "{s}│   ", .{prefix});
+            } else {
+                newPrefix = try std.fmt.bufPrint(&prefixBuffer, "{s}    ", .{prefix});
+            }
+
             if (entry.name[0] != 46) {
                 var pathBuffer: [50]u8 = undefined;
                 const fullPath = try std.fmt.bufPrint(&pathBuffer, "{s}{s}{s}", .{ path, "/", entry.name });
                 const subDir = try std.fs.cwd().openDir(fullPath, .{ .iterate = true });
-                try walkDir(subDir, fullPath, level + 1, numDirs, numFiles);
+                try walkDir(subDir, fullPath, numDirs, numFiles, newPrefix);
             }
         } else numFiles.* += 1;
 
