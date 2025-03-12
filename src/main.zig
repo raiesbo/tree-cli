@@ -19,8 +19,8 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, level: u8, numDirs: *i32, numF
 
     var it = dir.iterate();
 
-    var currEntry: ?std.fs.Dir.Entry = try it.next();
-    var nextEntry: ?std.fs.Dir.Entry = try it.next();
+    var currEntry = try it.next();
+    var nextEntry = try it.next();
 
     while (currEntry) |entry| {
         var indentBuffer: [128]u8 = undefined;
@@ -33,7 +33,7 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, level: u8, numDirs: *i32, numF
         }
 
         if (entry.kind == .directory) {
-            numDirs.* = numDirs.* + 1;
+            numDirs.* += 1;
 
             if (entry.name[0] != 46) {
                 var pathBuffer: [50]u8 = undefined;
@@ -41,9 +41,7 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, level: u8, numDirs: *i32, numF
                 const subDir = try std.fs.cwd().openDir(fullPath, .{ .iterate = true });
                 try walkDir(subDir, fullPath, level + 1, numDirs, numFiles);
             }
-        } else {
-            numFiles.* = numFiles.* + 1;
-        }
+        } else numFiles.* += 1;
 
         currEntry = nextEntry;
         nextEntry = try it.next();
