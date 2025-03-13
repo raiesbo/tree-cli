@@ -6,7 +6,7 @@ var with_color = false;
 pub fn main() !void {
     var args = std.process.args();
     while (args.next()) |arg| {
-        if (std.mem.eql(u8, arg, "-a") or std.mem.eql(u8, arg, "-A")) {
+        if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
             return printHelp();
         } else if (std.mem.eql(u8, arg, "-a") or std.mem.eql(u8, arg, "-A")) {
             with_hidden_directories = true;
@@ -66,14 +66,15 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, prefix: []const u8, num_dirs: 
 
 fn printHelp() !void {
     const message =
-        \\ Usage ftree [options]
+        \\Usage ftree [options]
         \\
         \\Options:
-        \\-h, --help       Show the help message information
-        \\-a, -A           Include the content of directories that start with "."
-        \\-c, -C           Include color coding in the tree for the different elements
+        \\  -h, --help       Show the help message information
+        \\  -a, -A           Include the content of directories that start with "."
+        \\  -c, -C           Include color coding in the tree for the different elements
+        \\
         \\
     ;
 
-    try std.io.getStdOut().write().print("{}", .{message});
+    try std.io.getStdOut().writer().print("{s}", .{message});
 }
