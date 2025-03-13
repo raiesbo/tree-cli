@@ -33,3 +33,9 @@ pub fn getTextColor(entry: std.fs.Dir.Entry, with_colors: bool) []const u8 {
         }
     } else return "35";
 }
+
+pub fn isValidPath(path: []const u8) bool {
+    var dir = std.fs.cwd();
+    const result = dir.openFile(path, .{ .mode = .read_only });
+    return result != error.FileNotFound and result != error.AccessDenied;
+}

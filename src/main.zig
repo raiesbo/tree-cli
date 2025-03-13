@@ -7,10 +7,12 @@ pub fn main() !void {
 
     var with_hidden_directories_flag = false;
     var with_color_flag = false;
-    const selected_directory: []const u8 = ".";
+    var selected_directory: []const u8 = ".";
 
     while (args.next()) |arg| {
-        if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
+        if (std.mem.startsWith(u8, arg, ".")) {
+            if (utils.isValidPath(arg)) selected_directory = arg;
+        } else if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
             return utils.printHelp();
         } else if (std.mem.eql(u8, arg, "-v") or std.mem.eql(u8, arg, "--version")) {
             return utils.printVersion();

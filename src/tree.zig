@@ -11,13 +11,13 @@ pub const Tree = struct {
 
     pub fn walkDirs(t: Tree) !void {
         const cwd = std.fs.cwd();
-        const dir = try cwd.openDir(".", .{ .iterate = true });
+        const dir = try cwd.openDir(t.init_dir, .{ .iterate = true });
 
         const stdout = std.io.getStdOut().writer();
         try stdout.print("·\n", .{});
 
         try t.walkDirsAux(dir, t.init_dir, "");
-        try stdout.print("\nDirectories: {} Files: {}\n", .{ num_dirs, num_files });
+        try stdout.print("\nDirectories: \x1b[1m{} Files: \x1b[1m{}\n", .{ num_dirs, num_files });
     }
 
     fn walkDirsAux(t: Tree, dir: std.fs.Dir, path: []const u8, prefix: []const u8) !void {
@@ -45,8 +45,10 @@ pub const Tree = struct {
                 const new_prefix: []u8 = try std.fmt.bufPrint(&new_prefix_buffer, "{s}{s}   ", .{ prefix, if (is_last_entry) " " else "│" });
 
                 if (t.with_hidden_dirs or entry.name[0] != '.') {
-                    var path_buffer: [256]u8 = undefined;
-                    const full_path = try std.fmt.bufPrint(&path_buffer, "{s}{s}{s}", .{ path, "/", entry.name });
+                    const alloc = std.heap.page_allocator;
+                    const full_path = try std.fs.path.join(alloc, &[_][]const u8{ path, entry.name });
+                    defer alloc.free(full_path);
+
                     const sub_dir = try std.fs.cwd().openDir(full_path, .{ .iterate = true });
                     try t.walkDirsAux(sub_dir, full_path, new_prefix);
                 }
