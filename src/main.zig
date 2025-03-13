@@ -1,12 +1,17 @@
 const std = @import("std");
 
-var withHiddenDirectories = false;
+var with_hidden_directories = false;
+var with_color = false;
 
 pub fn main() !void {
     var args = std.process.args();
     while (args.next()) |arg| {
-        if (std.mem.eql(u8, arg, "-a")) {
-            withHiddenDirectories = true;
+        if (std.mem.eql(u8, arg, "-a") or std.mem.eql(u8, arg, "-A")) {
+            return printHelp();
+        } else if (std.mem.eql(u8, arg, "-a") or std.mem.eql(u8, arg, "-A")) {
+            with_hidden_directories = true;
+        } else if (std.mem.eql(u8, arg, "-c") or std.mem.eql(u8, arg, "-C")) {
+            with_color = true;
         }
     }
 
@@ -34,9 +39,11 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, prefix: []const u8, num_dirs: 
     while (curr_entry) |entry| {
         const is_last_entry = next_entry == null;
 
-        try stdout.print("{s}{s}── {s}\n", .{ prefix, if (is_last_entry) "└" else "├", entry.name });
-        // TODO: Add -c // --color flag for coloring the different elements. Files / Directories
-        // try stdout.print("{s}{s}── \x1b[36m{s}\x1b[0m\n", .{ prefix, if (isLast) "└" else "├", entry.name });
+        if (with_color and entry.kind == .directory) {
+            try stdout.print("{s}{s}── \x1b[36m{s}\x1b[0m\n", .{ prefix, if (is_last_entry) "└" else "├", entry.name });
+        } else {
+            try stdout.print("{s}{s}── {s}\n", .{ prefix, if (is_last_entry) "└" else "├", entry.name });
+        }
 
         if (entry.kind == .directory) {
             num_dirs.* += 1;
@@ -44,7 +51,7 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, prefix: []const u8, num_dirs: 
             var new_prefix_buffer: [50]u8 = undefined;
             const new_prefix: []u8 = try std.fmt.bufPrint(&new_prefix_buffer, "{s}{s}   ", .{ prefix, if (is_last_entry) " " else "│" });
 
-            if (withHiddenDirectories or entry.name[0] != '.') {
+            if (with_hidden_directories or entry.name[0] != '.') {
                 var path_buffer: [50]u8 = undefined;
                 const full_path = try std.fmt.bufPrint(&path_buffer, "{s}{s}{s}", .{ path, "/", entry.name });
                 const sub_dir = try std.fs.cwd().openDir(full_path, .{ .iterate = true });
@@ -55,4 +62,18 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, prefix: []const u8, num_dirs: 
         curr_entry = next_entry;
         next_entry = try it.next();
     }
+}
+
+fn printHelp() !void {
+    const message =
+        \\ Usage ftree [options]
+        \\
+        \\Options:
+        \\-h, --help       Show the help message information
+        \\-a, -A           Include the content of directories that start with "."
+        \\-c, -C           Include color coding in the tree for the different elements
+        \\
+    ;
+
+    try std.io.getStdOut().write().print("{}", .{message});
 }
