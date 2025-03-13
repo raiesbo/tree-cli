@@ -1,5 +1,4 @@
 const std = @import("std");
-const bzz = @import("../build.zig.zon");
 
 pub fn printHelp() !void {
     const message =
@@ -21,4 +20,16 @@ pub fn printHelp() !void {
 pub fn printVersion() !void {
     const version = "0.0.1";
     try std.io.getStdOut().writer().print("v{s}\n", .{version});
+}
+
+pub fn getTextColor(entry: std.fs.Dir.Entry, with_colors: bool) []const u8 {
+    if (!with_colors) return "37";
+
+    if (entry.kind == .directory) {
+        if (entry.name[0] == '.') {
+            return "36";
+        } else {
+            return "34";
+        }
+    } else return "35";
 }

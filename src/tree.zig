@@ -1,4 +1,5 @@
 const std = @import("std");
+const utils = @import("utils.zig");
 
 pub const Tree = struct {
     init_dir: []const u8,
@@ -30,20 +31,21 @@ pub const Tree = struct {
         while (curr_entry) |entry| {
             const is_last_entry = next_entry == null;
 
-            if (t.with_color and entry.kind == .directory) {
-                try stdout.print("{s}{s}── \x1b[36m{s}\x1b[0m\n", .{ prefix, if (is_last_entry) "└" else "├", entry.name });
-            } else {
-                try stdout.print("{s}{s}── {s}\n", .{ prefix, if (is_last_entry) "└" else "├", entry.name });
-            }
+            try stdout.print("{s}{s}── \x1b[{s}m{s}\x1b[0m\n", .{
+                prefix,
+                if (is_last_entry) "└" else "├",
+                utils.getTextColor(entry, t.with_color),
+                entry.name,
+            });
 
             if (entry.kind == .directory) {
                 num_dirs += 1;
 
-                var new_prefix_buffer: [50]u8 = undefined;
+                var new_prefix_buffer: [256]u8 = undefined;
                 const new_prefix: []u8 = try std.fmt.bufPrint(&new_prefix_buffer, "{s}{s}   ", .{ prefix, if (is_last_entry) " " else "│" });
 
                 if (t.with_hidden_dirs or entry.name[0] != '.') {
-                    var path_buffer: [50]u8 = undefined;
+                    var path_buffer: [256]u8 = undefined;
                     const full_path = try std.fmt.bufPrint(&path_buffer, "{s}{s}{s}", .{ path, "/", entry.name });
                     const sub_dir = try std.fs.cwd().openDir(full_path, .{ .iterate = true });
                     try t.walkDirsAux(sub_dir, full_path, new_prefix);
