@@ -1,6 +1,15 @@
 const std = @import("std");
 
+var withHiddenDirectories = false;
+
 pub fn main() !void {
+    var args = std.process.args();
+    while (args.next()) |arg| {
+        if (std.mem.eql(u8, arg, "-a")) {
+            withHiddenDirectories = true;
+        }
+    }
+
     const cwd = std.fs.cwd();
     const dir = try cwd.openDir(".", .{ .iterate = true });
 
@@ -23,9 +32,9 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, prefix: []const u8, num_dirs: 
     var next_entry = try it.next();
 
     while (curr_entry) |entry| {
-        const isLast = next_entry == null;
+        const is_last_entry = next_entry == null;
 
-        try stdout.print("{s}{s}── {s}\n", .{ prefix, if (isLast) "└" else "├", entry.name });
+        try stdout.print("{s}{s}── {s}\n", .{ prefix, if (is_last_entry) "└" else "├", entry.name });
         // TODO: Add -c // --color flag for coloring the different elements. Files / Directories
         // try stdout.print("{s}{s}── \x1b[36m{s}\x1b[0m\n", .{ prefix, if (isLast) "└" else "├", entry.name });
 
@@ -33,10 +42,9 @@ pub fn walkDir(dir: std.fs.Dir, path: []const u8, prefix: []const u8, num_dirs: 
             num_dirs.* += 1;
 
             var new_prefix_buffer: [50]u8 = undefined;
-            const new_prefix: []u8 = try std.fmt.bufPrint(&new_prefix_buffer, "{s}{s}   ", .{ prefix, if (isLast) " " else "│" });
+            const new_prefix: []u8 = try std.fmt.bufPrint(&new_prefix_buffer, "{s}{s}   ", .{ prefix, if (is_last_entry) " " else "│" });
 
-            // TODO: Add -a to display the insides of directories that start with a "."
-            if (entry.name[0] != '.') {
+            if (withHiddenDirectories or entry.name[0] != '.') {
                 var path_buffer: [50]u8 = undefined;
                 const full_path = try std.fmt.bufPrint(&path_buffer, "{s}{s}{s}", .{ path, "/", entry.name });
                 const sub_dir = try std.fs.cwd().openDir(full_path, .{ .iterate = true });
