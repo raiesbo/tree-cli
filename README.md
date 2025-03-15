@@ -1,12 +1,11 @@
 # Tree CLI
 
-Tree CLI is a command-line application written in Zig that emulates the popular Linux `tree` command. It displays directory structures, including files, directly in the terminal, compatible with any operating system.
+Tree CLI is a command-line application written in Zig that recursively lists and displays directory structures and files directly in the terminal, compatible with any operating system.
 
 Example:
 
 ```bash
 ·
-├── LICENSE
 ├── build.zig.zon
 ├── build.zig
 ├── README.md
@@ -51,7 +50,3 @@ tree <directory-path> <flags>
 ```bash
 tree ./some_directory -a -c
 ```
-
-## Contributing
-
-We are thankful for any contributions.
