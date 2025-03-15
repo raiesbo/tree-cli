@@ -2,14 +2,19 @@ const std = @import("std");
 
 pub fn printHelp() !void {
     const message =
-        \\Usage ftree [options]
+        \\Tree CLI - Recursively lists the directory structure of a given path,
+        \\including files, and displays it in a tree-like format directly in the terminal.
         \\
-        \\Options:
+        \\USAGE:
         \\
-        \\  -h, --help       Show the help message information
-        \\  -v, --version    Show the version of the application
-        \\  -a, -A           Include the content of directories that start with "."
-        \\  -c, -C           Include color coding in the tree for the different elements
+        \\  tree <dir_path?> <options?>
+        \\
+        \\OPTIONS:
+        \\
+        \\  -h, --help       Show this help message
+        \\  -v, --version    Show the application version
+        \\  -a, -A           Include hidden files and directories (starting with ".")
+        \\  -c, -C           Enable color coding for different elements
         \\
         \\
     ;
@@ -24,14 +29,13 @@ pub fn printVersion() !void {
 
 pub fn getTextColor(entry: std.fs.Dir.Entry, with_colors: bool) []const u8 {
     if (!with_colors) return "37";
-
+    if (entry.kind == .sym_link) return "32";
+    if (entry.kind == .unix_domain_socket) return "31";
     if (entry.kind == .directory) {
-        if (entry.name[0] == '.') {
-            return "36";
-        } else {
-            return "34";
-        }
-    } else return "35";
+        if (entry.name[0] == '.') return "36";
+        return "34";
+    }
+    return "35"; // File type
 }
 
 pub fn isValidPath(path: []const u8) bool {
