@@ -18,7 +18,7 @@ pub const Tree = struct {
 
         const stdout = std.io.getStdOut().writer();
         try stdout.print("·\n", .{});
-        try t.walkDirsAux(dir, t.init_dir, "", arena.allocator());
+        try t.walkDirsAux(dir, "", arena.allocator());
         try stdout.print("\n{} {s}, {} {s}\n", .{
             num_dirs,
             if (num_dirs == 1) "directory" else "directories",
@@ -27,7 +27,7 @@ pub const Tree = struct {
         });
     }
 
-    fn walkDirsAux(t: Tree, dir: std.fs.Dir, path: []const u8, prefix: []const u8, alloc: std.mem.Allocator) !void {
+    fn walkDirsAux(t: Tree, dir: std.fs.Dir, prefix: []const u8, alloc: std.mem.Allocator) !void {
         const stdout = std.io.getStdOut().writer();
 
         var it = dir.iterate();
@@ -49,11 +49,10 @@ pub const Tree = struct {
 
                 if (t.with_hidden_dirs or entry.name[0] != '.') {
                     const new_prefix: []u8 = try std.fmt.allocPrint(alloc, "{s}{s}   ", .{ prefix, if (is_last_entry) " " else "│" });
-                    const dir_path = try std.fs.path.join(alloc, &[_][]const u8{ path, entry.name });
 
                     // TODO: Validate path to see if the directory still exists before attempting to open it.
-                    const sub_dir = try std.fs.cwd().openDir(dir_path, .{ .iterate = true });
-                    try t.walkDirsAux(sub_dir, dir_path, new_prefix, alloc);
+                    const sub_dir = try dir.openDir(entry.name, .{ .iterate = true });
+                    try t.walkDirsAux(sub_dir, new_prefix, alloc);
                 }
             } else num_files += 1;
 
