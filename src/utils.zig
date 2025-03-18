@@ -7,7 +7,7 @@ pub fn printHelp() !void {
         \\
         \\USAGE:
         \\
-        \\  tree <dir_path?> <options?>
+        \\  tree [path-to-directory] [options]
         \\
         \\OPTIONS:
         \\
