@@ -1,15 +1,22 @@
 #!/bin/zsh
 
-( exec zig build )
+# Build binary
+zig build || { echo "Failed to compile the binary"; exit 1; }
 
-if [[ $OSTYPE == "darwin"* ]]; then 
+# Move binary
+OS=$(uname -s)
+if [[ $OS == "Darwin" ]]; then 
     if [ -e zig-out/bin/tree ]; then
-        mv -f zig-out/bin/tree /usr/local/bin/tree
+        echo "Moving binary to /usr/local/bin (requires sudo)"
+        sudo mv -f zig-out/bin/tree /usr/local/bin/tree || { echo "Failed to move binary"; exit 1; }
+
         rm -rf zig-out
-        echo "binary file successfully in place"
+        echo "Binary installed successfully!"
     else
-        echo "unable to compile the binary file"
+        echo "Unable to compile the binary file"
+        exit 1
     fi
 else
-    echo "the installer only works in macOS"
+    echo "This installer only works in macOS"
+    exit 1
 fi
