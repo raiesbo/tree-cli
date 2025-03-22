@@ -16,10 +16,16 @@ pub const Tree = struct {
         var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
         defer arena.deinit();
 
+        const alloc = arena.allocator();
+        var treeBuffer = try std.ArrayList(u8).initCapacity(alloc, 1024);
+        defer treeBuffer.deinit();
+
+        const bufWriter = treeBuffer.writer();
+
         const stdout = std.io.getStdOut().writer();
-        try stdout.print("·\n", .{});
-        try t.walkDirsAux(dir, "", arena.allocator());
-        try stdout.print("\n{} {s}, {} {s}\n", .{
+        try t.walkDirsAux(dir, "", alloc, bufWriter);
+        try stdout.print("·\n{s}\n{} {s}, {} {s}\n", .{
+            treeBuffer.items,
             num_dirs,
             if (num_dirs == 1) "directory" else "directories",
             num_files,
@@ -27,9 +33,7 @@ pub const Tree = struct {
         });
     }
 
-    fn walkDirsAux(t: Tree, dir: std.fs.Dir, prefix: []const u8, alloc: std.mem.Allocator) !void {
-        const stdout = std.io.getStdOut().writer();
-
+    fn walkDirsAux(t: Tree, dir: std.fs.Dir, prefix: []const u8, alloc: std.mem.Allocator, writer: anytype) !void {
         var it = dir.iterate();
         var curr_entry = try it.next();
         var next_entry = try it.next();
@@ -44,7 +48,7 @@ pub const Tree = struct {
 
             const is_last_entry = next_entry == null;
 
-            try stdout.print("{s}{s}── \x1b[{s}m{s}\x1b[0m\n", .{
+            try writer.print("{s}{s}── \x1b[{s}m{s}\x1b[0m\n", .{
                 prefix,
                 if (is_last_entry) "└" else "├",
                 utils.getTextColor(entry, t.with_color),
@@ -54,11 +58,12 @@ pub const Tree = struct {
             if (entry.kind == .directory) {
                 num_dirs += 1;
 
-                if (t.with_hidden_dirs or entry.name[0] != '.') {
+                if (t.with_hidden_dirs or (entry.name.len > 0 and entry.name[0] != '.')) {
                     const new_prefix: []u8 = try std.fmt.allocPrint(alloc, "{s}{s}   ", .{ prefix, if (is_last_entry) " " else "│" });
+                    defer alloc.free(new_prefix);
 
                     const sub_dir = dir.openDir(entry.name, .{ .iterate = true }) catch return;
-                    try t.walkDirsAux(sub_dir, new_prefix, alloc);
+                    try t.walkDirsAux(sub_dir, new_prefix, alloc, writer);
                 }
             } else num_files += 1;
 
