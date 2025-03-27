@@ -38,6 +38,9 @@ pub const Tree = struct {
         var curr_entry = try it.next();
         var next_entry = try it.next();
 
+        var prefix_buffer = std.ArrayList(u8).init(alloc);
+        defer prefix_buffer.deinit();
+
         while (curr_entry) |entry| {
             // Saveguard to avoid conflicting entry names
             if (std.mem.indexOfScalar(u8, entry.name, 0) != null) {
@@ -59,11 +62,12 @@ pub const Tree = struct {
                 num_dirs += 1;
 
                 if (t.with_hidden_dirs or (entry.name.len > 0 and entry.name[0] != '.')) {
-                    const new_prefix: []u8 = try std.fmt.allocPrint(alloc, "{s}{s}   ", .{ prefix, if (is_last_entry) " " else "│" });
-                    defer alloc.free(new_prefix);
+                    prefix_buffer.clearRetainingCapacity();
+                    prefix_buffer.appendSlice(prefix);
+                    prefix_buffer.appendSlice(if (is_last_entry) "    " else "│   ");
 
                     const sub_dir = dir.openDir(entry.name, .{ .iterate = true }) catch return;
-                    try t.walkDirsAux(sub_dir, new_prefix, alloc, writer);
+                    try t.walkDirsAux(sub_dir, prefix_buffer.items, alloc, writer);
                 }
             } else num_files += 1;
 
