@@ -5,6 +5,7 @@ pub const Tree = struct {
     init_dir: []const u8,
     with_color: bool,
     with_hidden_dirs: bool,
+    save_file: ?[]const u8,
 
     var num_dirs: i32 = 0;
     var num_files: i32 = 0;
@@ -21,16 +22,23 @@ pub const Tree = struct {
         defer treeBuffer.deinit();
 
         const bufWriter = treeBuffer.writer();
+        try bufWriter.print("·\n", .{});
+        try t.walkDirsAux(dir, "", alloc, bufWriter);
 
         const stdout = std.io.getStdOut().writer();
-        try t.walkDirsAux(dir, "", alloc, bufWriter);
-        try stdout.print("·\n{s}\n{} {s}, {} {s}\n", .{
+        try stdout.print("{s}\n{} {s}, {} {s}\n", .{
             treeBuffer.items,
             num_dirs,
             if (num_dirs == 1) "directory" else "directories",
             num_files,
             if (num_files == 1) "file" else "files",
         });
+
+        if (t.save_file) |file_name| {
+            const file = try cwd.createFile(file_name, .{});
+            defer file.close();
+            _ = try file.write(treeBuffer.items);
+        }
     }
 
     fn walkDirsAux(t: Tree, dir: std.fs.Dir, prefix: []const u8, alloc: std.mem.Allocator, writer: anytype) !void {
@@ -63,8 +71,8 @@ pub const Tree = struct {
 
                 if (t.with_hidden_dirs or (entry.name.len > 0 and entry.name[0] != '.')) {
                     prefix_buffer.clearRetainingCapacity();
-                    prefix_buffer.appendSlice(prefix);
-                    prefix_buffer.appendSlice(if (is_last_entry) "    " else "│   ");
+                    try prefix_buffer.appendSlice(prefix);
+                    try prefix_buffer.appendSlice(if (is_last_entry) "    " else "│   ");
 
                     const sub_dir = dir.openDir(entry.name, .{ .iterate = true }) catch return;
                     try t.walkDirsAux(sub_dir, prefix_buffer.items, alloc, writer);

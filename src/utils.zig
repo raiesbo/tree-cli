@@ -15,6 +15,7 @@ pub fn printHelp() !void {
         \\  -v, --version    Show the application version
         \\  -a, -A           Include hidden files and directories (starting with ".")
         \\  -c, -C           Enable color coding for different elements
+        \\  -o, -O filename  Saves output to the selected file  
         \\
         \\
     ;

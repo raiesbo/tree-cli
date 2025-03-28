@@ -8,6 +8,7 @@ pub fn main() !void {
     var with_hidden_directories_flag = false;
     var with_color_flag = false;
     var selected_directory: []const u8 = ".";
+    var file_name: ?[]const u8 = null;
 
     while (args.next()) |arg| {
         if (std.mem.startsWith(u8, arg, ".")) {
@@ -20,6 +21,9 @@ pub fn main() !void {
             with_hidden_directories_flag = true;
         } else if (std.mem.eql(u8, arg, "-c") or std.mem.eql(u8, arg, "-C")) {
             with_color_flag = true;
+        } else if (std.mem.eql(u8, arg, "-o") or std.mem.eql(u8, arg, "-O")) {
+            const selected_file = args.next();
+            file_name = selected_file;
         }
     }
 
@@ -27,6 +31,7 @@ pub fn main() !void {
         .init_dir = selected_directory,
         .with_color = with_color_flag,
         .with_hidden_dirs = with_hidden_directories_flag,
+        .save_file = file_name,
     };
 
     try t.walkDirs();
